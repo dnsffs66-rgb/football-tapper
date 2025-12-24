@@ -69,3 +69,29 @@
             setTimeout(() => ball.style.transform = 'scale(1)', 100);
 
             updateUpgradeButton();
+        };
+
+        // Покупка апгрейда
+        upgradeBtn.onclick = () => {
+            if (upgradeBought) return;
+            if (score >= 50) {
+                score -= 50;
+                clickPower += 2;
+                upgradeBought = true;
+                scoreEl.textContent = 'Голы: ' + score;
+                alert('Месси в команде! +2 гола за тап');
+                updateUpgradeButton();
+            }
+        };
+
+        function updateUpgradeButton() {
+            if (upgradeBought) {
+                upgradeBtn.textContent = 'Месси куплен';
+                upgradeBtn.disabled = true;
+            } else {
+                upgradeBtn.disabled = score < 50;
+            }
+        }
+    </script>
+</body>
+</html>
