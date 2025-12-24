@@ -2,59 +2,22 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { margin: 0; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-family: sans-serif; text-align: center; }
-        #ball { width: 200px; height: 200px; cursor: pointer; margin: 20px auto; transition: transform 0.1s; }
-        #score { font-size: 48px; margin: 20px; }
-        button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 15px; margin: 10px; border-radius: 10px; font-size: 18px; }
-    </style>
+    <title>Test counter</title>
 </head>
 <body>
-    <h1>⚽ Football Tapper</h1>
+    <h1>Тестовый счётчик</h1>
     <div id="score">Голы: 0</div>
-    <img id="ball" src="https://img.icons8.com/color/200/football.png" alt="Мяч">
-    <br>
-    <button onclick="buyUpgrade()">Купить Месси (+2 гола/тап) - 50 гол</button>
-    
+    <button id="btn">Жми сюда</button>
+
     <script>
-        // безопасно получаем объект Telegram.WebApp
-        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-        if (tg) {
-            tg.expand();
-            tg.requestViewport();
-        }
-
-        let score = 0, clickPower = 1;
-        
-        const ball = document.getElementById('ball');
+        let score = 0;
         const scoreEl = document.getElementById('score');
-        
-        ball.onclick = () => {
-            score += clickPower;
-            scoreEl.textContent = `Голы: ${score}`;
+        const btn = document.getElementById('btn');
 
-            if (tg && tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
-            }
-
-            ball.style.transform = 'scale(0.9)';
-            setTimeout(() => ball.style.transform = 'scale(1)', 100);
+        btn.onclick = () => {
+            score += 1;
+            scoreEl.textContent = 'Голы: ' + score;
         };
-        
-        function buyUpgrade() {
-            if (score >= 50) {
-                score -= 50;
-                clickPower += 2;
-                scoreEl.textContent = `Голы: ${score}`;
-
-                if (tg) {
-                    tg.showAlert('Месси в команде! +2 гола за тап');
-                } else {
-                    alert('Месси в команде! +2 гола за тап');
-                }
-            }
-        }
     </script>
 </body>
 </html>
