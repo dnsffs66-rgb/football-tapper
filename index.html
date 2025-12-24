@@ -2,229 +2,59 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <title>⚽ Football Tapper</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--tg-theme-bg-color), #1a1a2e);
-            color: var(--tg-theme-text-color);
-            min-height: 100vh;
-            overflow: hidden;
-            user-select: none;
-        }
-        .container { max-width: 400px; margin: 0 auto; padding: 20px; text-align: center; }
-        
-        .header {
-            background: rgba(0,0,0,0.7); 
-            padding: 15px; 
-            border-radius: 20px; 
-            margin-bottom: 20px;
-        }
-        h1 { font-size: 28px; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        
-        #score { 
-            font-size: 48px; 
-            font-weight: bold; 
-            margin: 20px 0; 
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 20px;
-        }
-        
-        #football { 
-            width: 220px; height: 220px; 
-            cursor: pointer; 
-            transition: all 0.15s ease;
-            border-radius: 50%;
-            border: 8px solid #fff;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            margin: 20px auto;
-            position: relative;
-        }
-        #football:active { transform: scale(0.92) rotate(10deg); }
-        #football::after {
-            content: '⚽'; font-size: 120px; 
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .upgrades {
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            margin: 20px 0;
-        }
-        .upgrade-btn {
-            background: linear-gradient(45deg, var(--tg-theme-button-color), #ffd700);
-            color: #000; 
-            border: none; 
-            padding: 15px; 
-            border-radius: 15px; 
-            font-size: 16px; 
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .upgrade-btn:hover { transform: scale(1.05); }
-        .upgrade-btn:disabled { 
-            background: #666; 
-            cursor: not-allowed; 
-            transform: none;
-        }
-        .upgrade-btn:not(:disabled)::after {
-            content: '💰'; margin-left: 8px;
-        }
-        
-        .passive { 
-            background: rgba(0,255,0,0.2); 
-            padding: 10px; 
-            border-radius: 10px; 
-            margin: 10px 0;
-            font-size: 18px;
-        }
+        body { margin: 0; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-family: sans-serif; text-align: center; }
+        #ball { width: 200px; height: 200px; cursor: pointer; margin: 20px auto; transition: transform 0.1s; }
+        #score { font-size: 48px; margin: 20px; }
+        button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 15px; margin: 10px; border-radius: 10px; font-size: 18px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>⚽ Football Tapper</h1>
-            <div id="userInfo">Загрузка...</div>
-        </div>
-        
-        <div id="score">Голы: 0</div>
-        
-        <div id="football" title="Тапай по мячу!"></div>
-        
-        <div class="passive" id="passive">Пассивный доход: 0/сек</div>
-        
-        <div class="upgrades">
-            <button class="upgrade-btn" id="messiBtn" onclick="buyUpgrade('messi')">
-                Месси x2
-            </button>
-            <button class="upgrade-btn" id="ronaldoBtn" onclick="buyUpgrade('ronaldo')">
-                Роналду x3
-            </button>
-            <button class="upgrade-btn" id="stadiumBtn" onclick="buyUpgrade('stadium')">
-                Стадион
-            </button>
-            <button class="upgrade-btn" id="teamBtn" onclick="buyUpgrade('team')">
-                Команда
-            </button>
-        </div>
-    </div>
-
+    <h1>⚽ Football Tapper</h1>
+    <div id="score">Голы: 0</div>
+    <img id="ball" src="https://img.icons8.com/color/200/football.png" alt="Мяч">
+    <br>
+    <button onclick="buyUpgrade()">Купить Месси (+2 гола/тап) - 50 гол</button>
+    
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.requestViewport();
-        tg.enableClosingByOutsideClick = false;
+        // безопасно получаем объект Telegram.WebApp
+        const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+        if (tg) {
+            tg.expand();
+            tg.requestViewport();
+        }
+
+        let score = 0, clickPower = 1;
         
-        // Игровые переменные
-        let gameData = {
-            score: 0,
-            clickPower: 1,
-            passiveIncome: 0,
-            upgrades: { messi: 0, ronaldo: 0, stadium: 0, team: 0 },
-            lastUpdate: Date.now()
-        };
-        
-        // Элементы UI
+        const ball = document.getElementById('ball');
         const scoreEl = document.getElementById('score');
-        const passiveEl = document.getElementById('passive');
-        const footballEl = document.getElementById('football');
-        const userInfoEl = document.getElementById('userInfo');
         
-        // Инициализация
-        function init() {
-            if (tg.initDataUnsafe.user) {
-                userInfoEl.textContent = `Игрок: ${tg.initDataUnsafe.user.first_name || 'Гость'}`;
+        ball.onclick = () => {
+            score += clickPower;
+            scoreEl.textContent = `Голы: ${score}`;
+
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
             }
-            loadGameData();
-            updateUI();
-            gameLoop();
-        }
-        
-        // Клик по мячу
-        footballEl.onclick = () => {
-            gameData.score += gameData.clickPower;
-            tg.HapticFeedback.impactOccurred('medium');
-            updateUI();
-            saveGameData();
+
+            ball.style.transform = 'scale(0.9)';
+            setTimeout(() => ball.style.transform = 'scale(1)', 100);
         };
         
-        // Покупка апгрейдов
-        function buyUpgrade(type) {
-            const upgrades = {
-                messi: { cost: 50, power: 1, max: 10 },
-                ronaldo: { cost: 200, power: 2, max: 5 },
-                stadium: { cost: 500, passive: 1, max: 3 },
-                team: { cost: 1000, passive: 3, max: 2 }
-            };
-            
-            const upgrade = upgrades[type];
-            if (gameData.score >= upgrade.cost && 
-                gameData.upgrades[type] < upgrade.max) {
-                
-                gameData.score -= upgrade.cost;
-                gameData.upgrades[type]++;
-                
-                if (upgrade.power) gameData.clickPower += upgrade.power;
-                if (upgrade.passive) gameData.passiveIncome += upgrade.passive;
-                
-                tg.HapticFeedback.notificationOccurred('success');
-                tg.showAlert(`Куплен ${type === 'messi' ? 'Месси' : 
-                                     type === 'ronaldo' ? 'Роналду' :
-                                     type === 'stadium' ? 'Стадион' : 'Команда'}!`);
-                
-                updateUI();
-                saveGameData();
+        function buyUpgrade() {
+            if (score >= 50) {
+                score -= 50;
+                clickPower += 2;
+                scoreEl.textContent = `Голы: ${score}`;
+
+                if (tg) {
+                    tg.showAlert('Месси в команде! +2 гола за тап');
+                } else {
+                    alert('Месси в команде! +2 гола за тап');
+                }
             }
         }
-        
-        // Обновление UI
-        function updateUI() {
-            scoreEl.textContent = `Голы: ${Math.floor(gameData.score)}`;
-            passiveEl.textContent = `Пассивный доход: ${gameData.passiveIncome}/сек`;
-            
-            // Обновляем кнопки
-            ['messi', 'ronaldo', 'stadium', 'team'].forEach(type => {
-                const btn = document.getElementById(type + 'Btn');
-                const upgrade = {
-                    messi: { cost: 50 * Math.pow(1.5, gameData.upgrades.messi) },
-                    ronaldo: { cost: 200 * Math.pow(1.5, gameData.upgrades.ronaldo) },
-                    stadium: { cost: 500 * Math.pow(2, gameData.upgrades.stadium) },
-                    team: { cost: 1000 * Math.pow(2, gameData.upgrades.team) }
-                }[type];
-                
-                const maxed = gameData.upgrades[type] >= ({messi:10,ronaldo:5,stadium:3,team:2})[type];
-                btn.textContent = maxed ? `${type.toUpperCase()} MAX` : 
-                                `${type.charAt(0).toUpperCase() + type.slice(1)} x${gameData.upgrades[type]+1}`;
-                btn.disabled = gameData.score < upgrade.cost || maxed;
-            });
-        }
-        
-        // Игровой цикл (пассивный доход)
-        function gameLoop() {
-            const now = Date.now();
-            const delta = (now - gameData.lastUpdate) / 1000;
-            gameData.score += gameData.passiveIncome * delta;
-            gameData.lastUpdate = now;
-            updateUI();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        // LocalStorage (временно)
-        function saveGameData() { localStorage.setItem('footballTapper', JSON.stringify(gameData)); }
-        function loadGameData() { 
-            const saved = localStorage.getItem('footballTapper');
-            if (saved) gameData = { ...gameData, ...JSON.parse(saved) };
-        }
-        
-        init();
     </script>
 </body>
 </html>
