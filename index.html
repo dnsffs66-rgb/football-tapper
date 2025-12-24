@@ -60,6 +60,10 @@
         const ball = document.getElementById('ball');
         const upgradeBtn = document.getElementById('upgradeBtn');
 
+        // загрузка состояния при старте
+        loadState();
+        updateUpgradeButton();
+
         // Клик по мячу
         ball.onclick = () => {
             score += clickPower;
@@ -69,6 +73,7 @@
             setTimeout(() => ball.style.transform = 'scale(1)', 100);
 
             updateUpgradeButton();
+            saveState();
         };
 
         // Покупка апгрейда
@@ -81,6 +86,7 @@
                 scoreEl.textContent = 'Голы: ' + score;
                 alert('Месси в команде! +2 гола за тап');
                 updateUpgradeButton();
+                saveState();
             }
         };
 
@@ -90,6 +96,29 @@
                 upgradeBtn.disabled = true;
             } else {
                 upgradeBtn.disabled = score < 50;
+            }
+        }
+
+        function saveState() {
+            const state = {
+                score: score,
+                clickPower: clickPower,
+                upgradeBought: upgradeBought
+            };
+            localStorage.setItem('football_tapper_state', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('football_tapper_state');
+            if (!saved) return;
+            try {
+                const state = JSON.parse(saved);
+                if (typeof state.score === 'number') score = state.score;
+                if (typeof state.clickPower === 'number') clickPower = state.clickPower;
+                if (typeof state.upgradeBought === 'boolean') upgradeBought = state.upgradeBought;
+                scoreEl.textContent = 'Голы: ' + score;
+            } catch (e) {
+                console.error(e);
             }
         }
     </script>
